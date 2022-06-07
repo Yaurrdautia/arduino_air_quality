@@ -1,0 +1,394 @@
+<style>
+html{
+    background-image: linear-gradient(37.5deg, #ffafbd, #ffc3a0);
+  }
+
+@font-face { font-family: Arial, Helvetica, sans-serif; 
+    src: local(Arial); 
+}
+@font-face { font-family: Arial, Helvetica, sans-serif; 
+    font-weight:bold; src: local(Arial); 
+}
+@font-face { font-family: Arial, Helvetica, sans-serif; 
+    src: local(Arial); 
+}
+
+.green{
+    color:rgb(37, 162, 37);
+    font-family: Helvetica, Helvetica , sans-serif;
+    text-shadow: -0.5px 0 black, 0 0.5px black, 0.5px 0 black, 0 -0.5px black;
+}
+.yellow{
+    color:rgb(255,255,0);
+    background-color: black;
+}
+.orange{
+    color:rgb(255,126,0);
+    background-color: black;
+}
+.red{
+    color:rgb(255,0,0);
+    background-color: black;
+}
+.purple{
+    color:rgb(143,63,151);
+    background-color: black;
+}
+.maroon{
+    color:rgb(126,0,35);
+    background-color: black;
+}
+.h{
+    font-family: Helvetica, Helvetica , sans-serif;
+}
+.h1{
+    font-family: Helvetica, Helvetica , sans-serif;
+    font-size: 40px;
+}
+.h2{
+    font-family: Helvetica, Helvetica , sans-serif;
+    font-size: 15px;
+}
+</style>
+
+<script class = h2>
+    let pollutants = { pm25: { unit: "&micro;g/m<sup>3</sup>", name: "PM<sub>2.5</sub>", range: [0,50,100,150,200,300,400,500], scale: [0, 12, 35.5, 55.5, 150.5, 250.5, 350.5, 500.5] }, pm10: { unit: "&micro;g/m<sup>3</sup>", name: "PM<sub>10</sub>", range: [0,50,100,150,200,300,400,500], scale: [0, 55, 155, 255, 355, 425, 505, 605] }, o31: { unit: "ppb", name: "O<sub>3</sub> (1 hour average)", range: ["1-hour ozone values do not define lower AQI values (<100). AQI values of 100 or below are calculated with 8-hour ozone concentrations.", 100,150,200,300,400,500], scale: [0, .125, .165,.205,.405,.505,.605 ] }, o38: { unit: "ppb", name: "O<sub>3</sub> (8 hours average)", range: [0,50,100,150,200,300, "8-hour ozone values do not define higher AQI values (>=300).  AQI values of 300 or greater are calculated with 1-hour ozone concentrations."], scale: [0, .06, .076, .096, .116, .375] }, so21: { unit: "ppb", name: "SO<sub>2</sub> (1 hour average)", range: [0, 50, 100, 150, 200, "AQI values of 200 or greater are calculated with 24-hour SO2 concentrations."], scale: [0, 36, 76, 186, 304, 604] }, so224: { unit: "ppb", name: "SO<sub>2</sub> (24 hours average)", range: ["AQI values less than 200 are calculated with 1-hour SO2 concentrations.", 200, 300, 400, 500], scale: [0, 304, 605,805,1004] }, no2: { unit: "ppb", name: "NO2<sub>2</sub>", range: [0,50,100,150,200,300,400,500], scale: [0, .054, .101, .361, .650, 1.250, 1.650, 2.049] }, co: { unit: "ppm", name: "CO", range: [0,50,100,150,200,300,400,500], scale: [0, 4.5, 9.5, 12.5, 15.5, 30.5, 40.5, 50.5] }};
+  
+    let descriptions = {
+    pm2510:{
+        good:"The pm 2.5 concentration is in a safe range. ",
+        moderate:"Unusually sensitive people should consider reducing prolonged or heavy exertion",
+        usg:"eople with heart or lung disease, older adults, children, and people of lower socioeconomic status should reduce prolonged or heavy exertion.",
+        unhealthy:"People with heart or lung disease, older adults, children, and people of lower socioeconomic status should avoid prolonged or heavy exertion; everyone else should reduce prolonged or heavy exertion.",
+        vuh:"People with heart or lung disease, older adults, children, and people of lower socioeconomic status should avoid all physical activity outdoors. Everyone else should avoid prolonged or heavy exertion.",
+        hazardous:"Everyone should avoid all physical activity outdoors; people with heart or lung disease, older adults, children, and people of lower socioeconomic status should remain indoors and keep activity levels low."
+    },
+
+    voc:{
+        good:"The air quality is considered satisfactory, and air pollution poses little or no risk",
+        acceptable:"The air quality is acceptable; however, for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.",
+        marginale:"The air quality is marginal; and may pose health hazards to sensitive groups if they are not dealt with.",
+        high:"The air is not safe to breathe. Take immediate action to protect yourself and others from becoming severely ill."
+    },
+
+    co2:{
+        good: "Normal background concentration in outdoor ambient air",
+        acceptable: "Concentrations typical of occupied indoor spaces with good air exchange",
+        moderate: "Complaints of drowsiness and poor air.",
+        unhealthy:"Headaches, sleepiness and stagnant, stale, stuffy air. Poor concentration, loss of attention, increased heart rate and slight nausea may also be present.",
+        unsafe:"Workplace exposure limit (as 8-hour TWA) in most jurisdictions.",
+        hazardous:"Exposure may lead to serious oxygen deprivation resulting in permanent brain damage, coma, even death."
+
+    },
+    temperature:{
+        good:"The temperature is in a safe range. ",
+        hot:{
+            unhealthy:"The temperature is not healthy. You may experience heat cramps and exhaustion.",
+            unsafe:"The temperature is not healthy. You are more likely to experience heat stroke and exhaustion. Limit your activities in this temperature range.",
+            hazardous:"The temperature is not hazardous. Try to stay in a well cooled location and limit going outside."
+        }
+    }
+    };
+
+
+
+    function calculateAqi(val, pol) {
+    var c = parseFloat(val);
+    var range = pollutants[pol].range;
+    var scale = pollutants[pol].scale;
+    for (var i = 0; i < scale.length - 1; i++) {
+        if (c >= scale[i] && c < scale[i + 1]) {
+            if (typeof range[i] == "string") {
+                return {
+                    aqi: "Out of range",
+                    info: range[i]
+                };
+            }
+            var aqi = range[i] + (c - scale[i]) * (range[i + 1] - range[i]) / (scale[i + 1] - scale[i]);
+            aqi = Math.round(aqi);
+            return {
+                aqi: aqi
+            };
+        }
+    }
+    return {
+        aqi: "Out of Range",
+        info: "Maximum concentration is " + scale[scale.length - 1]
+    };
+}
+
+    var getJSON = function(url, callback) {
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'json';
+
+    xhr.onload = function() {
+
+    var status = xhr.status;
+
+    if (status == 200) {
+        callback(null, xhr.response);
+    } else {
+        callback(status);
+    }
+    };
+
+    xhr.send();
+    };
+
+    
+
+    function update_values(){
+        getJSON('/data',  function(err, data) {
+        if (err != null) {
+            console.error(err);
+        } else {
+            data_val = data;
+            console.log(data_val);
+        }
+    });
+    };
+
+
+    setInterval(update_values,1000);
+
+    let current_substance = "";
+    
+    function get_aqi(type){
+        let header = document.getElementById("AQI_desc_val");
+        let desc = document.getElementById("AQI_description");
+        let aqi = {};
+        if (type == "pm25") {
+            current_substance = "pm25";
+            aqi = calculateAqi(data_val["pm2_5"], "pm25");
+            console.log(aqi.aqi);
+        }
+
+        if (type == "pm10"){
+            current_substance = "pm10";
+            aqi = calculateAqi(data_val["pm10"], "pm10");
+            console.log(aqi.aqi);
+        }
+        console.log(aqi.aqi);
+        let aqi_int = aqi.aqi;
+
+        if (aqi_int >=0 && aqi_int <= 50){
+            
+            header.innerHTML = "Good: " + String(aqi_int);
+            header.className = "green";
+
+            desc.innerHTML = descriptions.pm2510.good;
+        }
+
+        else if (aqi_int >51 && aqi_int <= 100){
+            header.innerHTML = "Moderate: " + String(aqi_int);
+            header.className = "yellow";
+            desc.innerHTML = descriptions.pm2510.moderate;
+        }
+
+        else if (aqi_int >101 && aqi_int <= 150){
+            header.innerHTML = "Unhealthy for Sensitive Groups: " + String(aqi_int);
+            header.className = "orange";
+            desc.innerHTML = descriptions.pm2510.usg;
+        }
+
+        else if (aqi_int >151 && aqi_int <= 200){
+            header.innerHTML = "Unhealthy: " + String(aqi_int);
+            header.className = "red";
+            desc.innerHTML = descriptions.pm2510.unhealthy;
+        }
+
+        else if (aqi_int >201 && aqi_int <= 300){
+            header.innerHTML = "Very Unhealthy: " + String(aqi_int);
+            header.className = "purple";
+            desc.innerHTML = descriptions.pm2510.vuh;
+        }
+
+        else if (aqi_int >301 && aqi_int <= 500){
+            header.innerHTML = "Hazardous: " + String(aqi_int);
+            header.className = "maroon";
+            desc.innerHTML = descriptions.pm2510.hazardous;
+        }
+        
+    }
+
+    function round_hundred(val){
+        return Math.ceil(val * 100) / 100;
+    }
+    let me_im = "C";
+    function modify_values(){
+        let temp_val = document.getElementById("temp_val");
+        let temp_desc = document.getElementById("temp_desc");
+        let pres_val = document.getElementById("pressure_val"); 
+        let co2_val = document.getElementById("CO2_val");
+        let co2_desc = document.getElementById("CO2_desc");
+        let voc_val = document.getElementById("voc_val");
+        let voc_desc = document.getElementById("voc_desc");
+        let pm_1_val = document.getElementById("pm1_val");
+        let pm_25_val = document.getElementById("pm25_val");
+        let pm_10_val = document.getElementById("pm10_val");
+        if (current_substance == "pm25"){
+            get_aqi("pm25");
+        }
+        else if (current_substance == "pm10"){
+            get_aqi("pm10");
+        }
+        else{
+            get_aqi("pm25");
+        }
+
+        if (me_im == 'C'){
+            temp_val.innerHTML = String(round_hundred(data_val["temperature"])) + " degrees (C)"; 
+            pres_val.innerHTML = String(round_hundred(data_val["pressure"]/10)) + " hPa";
+            co2_val.innerHTML = String(data_val["co2"]) + " PPM";
+            voc_val.innerHTML = String(data_val["voc"]) + " mg/m<sup>3</sup";
+            pm_1_val.innerHTML = String(data_val["pm1"]) + " ug/m<sup>3</sup>";
+            pm_25_val.innerHTML = String(data_val["pm2_5"]) + " ug/m<sup>3</sup>";
+            pm_10_val.innerHTML = String(data_val["pm10"]) + " ug/m<sup>3</sup>";
+        }
+
+        else if (me_im == 'F'){
+            temp_val.innerHTML = String(round_hundred(data_val["temperature"]*9/5 + 32)) + " degrees (F)"; 
+            pres_val.innerHTML = String(round_hundred(data_val["pressure"] * 	0.0075)) + " inHg";
+            co2_val.innerHTML = String(data_val["co2"]) + " PPM";
+            voc_val.innerHTML = String(data_val["voc"]) + " mg/m<sup>3</sup>";
+            pm_1_val.innerHTML = String(data_val["pm1"]) + " ug/m<sup>3</sup>";
+            pm_25_val.innerHTML = String(data_val["pm2_5"]) + " ug/m<sup>3</sup>";
+            pm_10_val.innerHTML = String(data_val["pm10"]) + " ug/m<sup>3</sup>";
+        }
+
+        if (data_val["temperature"]<=32){
+            temp_desc.innerHTML = descriptions.temperature.good;
+        }
+        else if (data_val["temperature"] > 32 && data_val["temperature"] < 40){
+            temp_desc.innerHTML = descriptions.temperature.hot.unhealthy;
+        }
+        else if (data_val["temperature"]>40 && data_val["temperature"]<54){
+            temp_desc.innerHTML = descriptions.temperature.hot.unsafe;
+        }
+        else if (data_val["temperature"]>54){
+            temp_desc.innerHTML = descriptions.temperature.hazardous;
+        }
+        
+        if (data_val["voc"]<30){
+            voc_desc.innerHTML = descriptions.voc.good;
+        }
+        else if (data_val["voc"]>30 && data_val["voc"]<50){
+            voc_desc.innerHTML = descriptions.voc.acceptable;
+        }
+        else if (data_val["voc"]>50 && data_val["voc"]<100){
+            voc_desc.innerHTML = descriptions.voc.marginal;
+        }
+        else if (data_val["voc"]>100){
+            voc_desc.innerHTML = descriptions.voc.high;
+        }
+
+        if (data_val["co2"]<250){
+            co2_desc.innerHTML = descriptions.co2.good;
+        }
+        else if (data_val["co2"]>250 && data_val["co2"]<400){
+            co2_desc.innerHTML = descriptions.co2.good;
+        }
+        else if (data_val["co2"]>400 && data_val["co2"]<1000){
+            co2_desc.innerHTML = descriptions.co2.acceptable;
+        }
+        else if (data_val["co2"]>1000 && data_val["co2"]<2000){
+            co2_desc.innerHTML = descriptions.co2.moderate;
+        }
+        else if (data_val["co2"]>2000 && data_val["co2"]<5000){
+            co2_desc.innerHTML = descriptions.co2.unhealthy;
+        }
+        else if (data_val["co2"]>40000){
+            co2_desc.innerHTML = descriptions.co2.hazardous;
+        }
+    }
+
+    setInterval(modify_values,1000);
+    function setunit(unit){
+        me_im = unit;
+        console.log(me_im)
+    }
+
+    
+</script>
+
+<html class = h>
+    
+    <h1 class=h1>
+        Dashboard
+    </h1>
+    <div class = h2>
+        Select the substance for which you want to view AQI (air quality index) for: 
+        <br>
+        <br>
+        <input type="radio" name="substance" onclick="get_aqi('pm25')" checked>PM 2.5 <br>
+        <input type="radio" name="substance" onclick="get_aqi('pm10')">PM 10<br>
+    </div>
+    
+
+    <div id="AQI_container">
+        <h1 id="AQI_desc_val" class="yellow">
+            Pending/Not connected
+        </h1>
+        <div id="AQI_description">
+            Description is currently pending. Please wait.
+        </div>
+    </div>
+    <br>
+    <h1>
+        Units
+    </h1>
+    <input type="radio" name="unit" onclick="setunit('C')" checked>Metric<br>
+    <input type="radio" name="unit" onclick="setunit('F')">Imperial<br>
+    
+    <div id="temperature">
+        <h1>
+            Temperature
+        </h1>
+        <b>The current temperature is: </b><span id="temp_val">Pending/Not connected</span>
+        <br>
+        <b>Description/Warning: </b><span id="temp_desc">Pending/Not connected</span>
+    </div>
+
+    <br>
+
+    <div id = "pressure">
+        <h1>
+            Pressure
+        </h1>
+        <b>The current Pressure is: </b><span id="pressure_val">Pending/Not connected</span>
+    </div>
+    <br>
+    <div id="CO2">
+        <h1>
+            CO2
+        </h1>
+        <b>The current CO2 is: </b><span id="CO2_val">Pending/Not connected</span>
+        <br>
+        <b>Description/Warning: </b><span id="CO2_desc">Pending/Not connected</span>
+    </div>
+
+    <br>
+    <div id="voc">
+        <h1>
+            VOC
+        </h1>
+        <b>The current VOC is: </b><span id="voc_val">Pending/Not connected</span>
+        <br>
+        <b>Description/Warning: </b><span id="voc_desc">Pending/Not connected</span>
+    </div>
+    <br>
+    <div id="PM12510">
+        <h1>
+            PM1, PM2.5 and PM10
+        </h1>
+        <b>The current PM1 is: </b><span id="pm1_val">Pending/Not connected</span>
+        <br>
+        <b>The current PM2.5 is: </b><span id="pm25_val">Pending/Not connected</span>
+        <br>
+        <b>The current PM10 is: </b><span id="pm10_val">Pending/Not connected</span>
+    </div>
+    <body>
+    </body>
+</html>
